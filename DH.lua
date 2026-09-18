@@ -1,7 +1,12 @@
 local VALUE = 100
 local LO = 1
 local HI = 100
-local DELAY = 0.01
+
+local SCAN_DELAY = 0.02
+local LOCK_DELAY = 0.005
+local LOCK_THREADS = 5
+
+local list = {}
 
 local function num(v)
     if type(v) == "number" then return v end
@@ -14,23 +19,37 @@ end
 
 task.spawn(function()
     while true do
-        local ok = pcall(function()
+        pcall(function()
             local cache = getgc("Stamina")
-            local list = {}
+            local newList = {}
             for _, e in ipairs(cache) do
                 if e.type == "number" then
                     local n = num(e.value)
                     if n and n >= LO and n <= HI then
-                        table.insert(list, e)
+                        table.insert(newList, e)
                     end
                 end
             end
-            if #list > 0 then
-                applygc(list, "Stamina", VALUE)
+            if #newList > 0 then
+                list = newList
             end
         end)
-        task.wait(DELAY)
+        task.wait(SCAN_DELAY)
     end
 end)
 
-print("on")
+for i = 1, LOCK_THREADS do
+    task.spawn(function()
+        while true do
+            pcall(function()
+                local current = list
+                if #current > 0 then
+                    applygc(current, "Stamina", VALUE)
+                end
+            end)
+            task.wait(LOCK_DELAY)
+        end
+    end)
+end
+
+print(("on"):format(SCAN_DELAY, LOCK_THREADS, LOCK_DELAY))
