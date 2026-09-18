@@ -52,4 +52,4 @@ for i = 1, LOCK_THREADS do
     end)
 end
 
-print(("on"):format(SCAN_DELAY, LOCK_THREADS, LOCK_DELAY))
+print("on")
